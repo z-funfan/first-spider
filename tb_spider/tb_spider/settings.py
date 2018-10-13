@@ -90,7 +90,7 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-MYSQL_HOST = 'funfan.xyz'
+MYSQL_HOST = 'localhost'
 MYSQL_DBNAME = 'spider'
 MYSQL_USER = 'spider'
 MYSQL_PASSWD = 'Spider@2018'
