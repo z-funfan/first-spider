@@ -415,14 +415,94 @@ class MiniMp4MysqlPipeline(object):
 
 连接池写法 
 
-待续
+相比直接插入db，需要多导入一个库 `from twisted.enterprise import adbapi`
+
+`from_settings(cls, settings)` 从settings.py获取设置，初始化连接池，并将连接池托管给类
+
+`__init__(self, dbpool)` 获取连接池
+
+`process_item`覆写item处理方法， 使用twisted将mysql插入变成异步执行
+
+`do_insert` 覆写sql执行方法
+
+`handle_error` 覆写异常处理方法
+
+`get_insert_sql`拼写插入语句，如果把该方法放到item配置里，pipeline就能变成通用pipeline
 
 
 
+```python
+import json
+import pymysql
+from twisted.enterprise import adbapi
 
+class MiniMp4MysqlPoolPipeline(object):
 
+    # 初始化时获取 setting.py 配置
+    def __init__(self, dbpool):
+        self.dbpool = dbpool
 
+    @classmethod
+    def from_settings(cls, settings):
+        dbparams = dict(
+            host=settings.get('MYSQL_HOST'),#数据库地址
+            port=settings.get('MYSQL_PORT'),# 数据库端口
+            db=settings.get('MYSQL_DBNAME'), # 数据库名
+            user=settings.get('MYSQL_USER'), # 数据库用户名
+            passwd=settings.get('MYSQL_PASSWD'), # 数据库密码
+            charset='utf8', # 编码方式
+            cursorclass=pymysql.cursors.DictCursor, # 指定 curosr 类型
+            use_unicode=True
+        )
+        dbpool = adbapi.ConnectionPool('pymysql',**dbparams)
+        return cls(dbpool) # 相当于dbpool付给了这个类，self中可以得到
 
+    # 使用twisted将mysql插入变成异步执行
+    def process_item(self, item, spider):
+        # 指定操作方法和操作的数据
+        query = self.dbpool.runInteraction(self.do_insert, item)
+        # 指定异常处理方法
+        query.addErrback(self.handle_error, item, spider) 
 
+    def handle_error(self, failure, item, spider):
+        #处理异步插入的异常
+        print (failure)
+        print("ERROR - Following item cannot be inserted into db:")
+        print(repr(item))
 
+    def do_insert(self, cursor, item):
+        #执行具体的插入
+        #根据不同的item 构建不同的sql语句并插入到mysql中
+        # 如果把该方法放到item配置里，pipeline就能变成通用pipeline
+        # insert_sql,params=item.get_insert_sql() 
+        insert_sql,params=self.get_insert_sql(item)
+        cursor.execute(insert_sql,params)
+
+    def get_insert_sql(self, item):
+        insert_sql =  '''insert into minimp4(
+        id, 
+        name, 
+        region, 
+        language, 
+        release_time, 
+        duaration, 
+        douban_point, 
+        imdb_point, 
+        details
+        ) values (
+           uuid(), %s, %s, %s, %s, %s, %s, %s, %s
+        );'''	
+        params = (
+            pymysql.escape_string( item['name'][0] if len(item['name'])>0 else ''),
+            pymysql.escape_string(item['region'][0] if len(item['region'])>0 else ''),
+            pymysql.escape_string(item['language'][0] if len(item['language'])>0 else ''),
+            pymysql.escape_string(item['release_time'][0] if len(item['release_time'])>0 else ''),
+            pymysql.escape_string(item['duaration'][0] if len(item['duaration'])>0 else ''),
+            pymysql.escape_string(item['douban_point'][0] if len(item['douban_point'])>0 else ''),
+            pymysql.escape_string(item['imdb_point'][0] if len(item['imdb_point'])>0 else ''),
+            pymysql.escape_string(json.dumps(dict(item), ensure_ascii=False))
+        )
+        return (insert_sql,params)
+
+```
 
