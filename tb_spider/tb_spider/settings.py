@@ -65,7 +65,8 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'tb_spider.pipelines.MiniMp4SpiderPipeline': 300,
+   'tb_spider.pipelines.MiniMp4MysqlPipeline': 200,
+  #  'tb_spider.pipelines.MiniMp4SpiderPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -88,3 +89,9 @@ ITEM_PIPELINES = {
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+MYSQL_HOST = 'funfan.xyz'
+MYSQL_DBNAME = 'spider'
+MYSQL_USER = 'spider'
+MYSQL_PASSWD = 'Spider@2018'
+MYSQL_PORT = 3306
