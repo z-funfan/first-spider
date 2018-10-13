@@ -147,6 +147,8 @@ class MiniMp4MysqlPoolPipeline(object):
     def do_insert(self, cursor, item):
         #执行具体的插入
         #根据不同的item 构建不同的sql语句并插入到mysql中
+        # 如果把该方法放到item配置里，pipeline就能变成通用pipeline
+        # insert_sql,params=item.get_insert_sql() 
         insert_sql,params=self.get_insert_sql(item)
         cursor.execute(insert_sql,params)
 
