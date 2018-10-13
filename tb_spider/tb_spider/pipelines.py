@@ -6,6 +6,7 @@
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import json
 import pymysql
+from twisted.enterprise import adbapi
 
 class TbSpiderPipeline(object):
 
@@ -108,3 +109,69 @@ class MiniMp4MysqlPipeline(object):
     def close_spider(self, spider):
         self.cursor.close()
         self.connect.close()
+
+class MiniMp4MysqlPoolPipeline(object):
+
+    # 初始化时获取 setting.py 配置
+    def __init__(self, dbpool):
+        self.dbpool = dbpool
+
+    @classmethod
+    def from_settings(cls, settings):
+        dbparams = dict(
+            host=settings.get('MYSQL_HOST'),#数据库地址
+            port=settings.get('MYSQL_PORT'),# 数据库端口
+            db=settings.get('MYSQL_DBNAME'), # 数据库名
+            user=settings.get('MYSQL_USER'), # 数据库用户名
+            passwd=settings.get('MYSQL_PASSWD'), # 数据库密码
+            charset='utf8', # 编码方式
+            cursorclass=pymysql.cursors.DictCursor, # 指定 curosr 类型
+            use_unicode=True
+        )
+        dbpool = adbapi.ConnectionPool('pymysql',**dbparams)
+        return cls(dbpool) # 相当于dbpool付给了这个类，self中可以得到
+
+    # 使用twisted将mysql插入变成异步执行
+    def process_item(self, item, spider):
+        # 指定操作方法和操作的数据
+        query = self.dbpool.runInteraction(self.do_insert, item)
+        # 指定异常处理方法
+        query.addErrback(self.handle_error, item, spider) 
+
+    def handle_error(self, failure, item, spider):
+        #处理异步插入的异常
+        print (failure)
+        print("ERROR - Following item cannot be inserted into db:")
+        print(repr(item))
+
+    def do_insert(self, cursor, item):
+        #执行具体的插入
+        #根据不同的item 构建不同的sql语句并插入到mysql中
+        insert_sql,params=self.get_insert_sql(item)
+        cursor.execute(insert_sql,params)
+
+    def get_insert_sql(self, item):
+        insert_sql =  '''insert into minimp4(
+        id, 
+        name, 
+        region, 
+        language, 
+        release_time, 
+        duaration, 
+        douban_point, 
+        imdb_point, 
+        details
+        ) values (
+           uuid(), %s, %s, %s, %s, %s, %s, %s, %s
+        );'''	
+        params = (
+            pymysql.escape_string( item['name'][0] if len(item['name'])>0 else ''),
+            pymysql.escape_string(item['region'][0] if len(item['region'])>0 else ''),
+            pymysql.escape_string(item['language'][0] if len(item['language'])>0 else ''),
+            pymysql.escape_string(item['release_time'][0] if len(item['release_time'])>0 else ''),
+            pymysql.escape_string(item['duaration'][0] if len(item['duaration'])>0 else ''),
+            pymysql.escape_string(item['douban_point'][0] if len(item['douban_point'])>0 else ''),
+            pymysql.escape_string(item['imdb_point'][0] if len(item['imdb_point'])>0 else ''),
+            pymysql.escape_string(json.dumps(dict(item), ensure_ascii=False))
+        )
+        return (insert_sql,params)
