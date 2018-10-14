@@ -65,7 +65,7 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'tb_spider.pipelines.MiniMp4MysqlPoolPipeline': 100,
+   'tb_spider.pipelines.MysqlPoolPipeline': 100,
   #  'tb_spider.pipelines.MiniMp4MysqlPipeline': 200,
   #  'tb_spider.pipelines.MiniMp4SpiderPipeline': 300,
 }
@@ -91,7 +91,7 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-MYSQL_HOST = 'localhost'
+MYSQL_HOST = 'funfan.xyz'
 MYSQL_DBNAME = 'spider'
 MYSQL_USER = 'spider'
 MYSQL_PASSWD = 'Spider@2018'

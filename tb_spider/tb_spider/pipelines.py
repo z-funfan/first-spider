@@ -110,8 +110,8 @@ class MiniMp4MysqlPipeline(object):
         self.cursor.close()
         self.connect.close()
 
-class MiniMp4MysqlPoolPipeline(object):
-
+class MysqlPoolPipeline(object):
+    
     # 初始化时获取 setting.py 配置
     def __init__(self, dbpool):
         self.dbpool = dbpool
@@ -147,33 +147,5 @@ class MiniMp4MysqlPoolPipeline(object):
     def do_insert(self, cursor, item):
         #执行具体的插入
         #根据不同的item 构建不同的sql语句并插入到mysql中
-        # 如果把该方法放到item配置里，pipeline就能变成通用pipeline
-        # insert_sql,params=item.get_insert_sql() 
-        insert_sql,params=self.get_insert_sql(item)
+        insert_sql,params=item.get_insert_sql() 
         cursor.execute(insert_sql,params)
-
-    def get_insert_sql(self, item):
-        insert_sql =  '''insert into minimp4(
-        id, 
-        name, 
-        region, 
-        language, 
-        release_time, 
-        duaration, 
-        douban_point, 
-        imdb_point, 
-        details
-        ) values (
-           uuid(), %s, %s, %s, %s, %s, %s, %s, %s
-        );'''	
-        params = (
-            pymysql.escape_string( item['name'][0] if len(item['name'])>0 else ''),
-            pymysql.escape_string(item['region'][0] if len(item['region'])>0 else ''),
-            pymysql.escape_string(item['language'][0] if len(item['language'])>0 else ''),
-            pymysql.escape_string(item['release_time'][0] if len(item['release_time'])>0 else ''),
-            pymysql.escape_string(item['duaration'][0] if len(item['duaration'])>0 else ''),
-            pymysql.escape_string(item['douban_point'][0] if len(item['douban_point'])>0 else ''),
-            pymysql.escape_string(item['imdb_point'][0] if len(item['imdb_point'])>0 else ''),
-            pymysql.escape_string(json.dumps(dict(item), ensure_ascii=False))
-        )
-        return (insert_sql,params)

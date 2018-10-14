@@ -6,6 +6,8 @@
 # https://doc.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+import json
+import pymysql
 
 
 class TbSpiderItem(scrapy.Item):
@@ -29,3 +31,29 @@ class MiniMp4Item(scrapy.Item):
 	description = scrapy.Field()
 	resources = scrapy.Field()
 	comments = scrapy.Field()
+
+	def get_insert_sql(self):
+		insert_sql =  '''insert into minimp4(
+		id, 
+		name, 
+		region, 
+		language, 
+		release_time, 
+		duaration, 
+		douban_point, 
+		imdb_point, 
+		details
+		) values (
+			uuid(), %s, %s, %s, %s, %s, %s, %s, %s
+		);'''	
+		params = (
+			pymysql.escape_string(self['name'][0] if len(self['name'])>0 else ''),
+			pymysql.escape_string(self['region'][0] if len(self['region'])>0 else ''),
+			pymysql.escape_string(self['language'][0] if len(self['language'])>0 else ''),
+			pymysql.escape_string(self['release_time'][0] if len(self['release_time'])>0 else ''),
+			pymysql.escape_string(self['duaration'][0] if len(self['duaration'])>0 else ''),
+			pymysql.escape_string(self['douban_point'][0] if len(self['douban_point'])>0 else ''),
+			pymysql.escape_string(self['imdb_point'][0] if len(self['imdb_point'])>0 else ''),
+			pymysql.escape_string(json.dumps(dict(self), ensure_ascii=False))
+		)
+		return (insert_sql,params) 
